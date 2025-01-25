@@ -1,5 +1,6 @@
 import requests
 import os
+
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QWidget, QLabel, QLineEdit,
                              QPushButton, QVBoxLayout)
@@ -95,35 +96,72 @@ class WeatherApp(QWidget):
         except requests.exceptions.HTTPError as http_error:
             match response.status_code:
                 case 400:
-                    print("Bad request\nPlese check your input")
+                    self.display_error("Bad request:\nPlese check your input")
                 case 401:
-                    print("Unauthorized\nInvalid API key")
+                    self.display_error("Unauthorized:\nInvalid API key")
                 case 403:
-                    print("Forbidden\nAccess is denied")
+                    self.display_error("Forbidden:\nAccess is denied")
                 case 404:
-                    print("Not found\nCity not found")
+                    self.display_error("Not found:\nCity not found")
                 case 500:
-                    print("Internal Server Error\nPlese try again later")
+                    self.display_error("Internal Server Error:\nPlese try again later")
                 case 502:
-                    print("Bad Gateway\nInvalid response from the server")
+                    self.display_error("Bad Gateway:\nInvalid response from the server")
                 case 503:
-                    print("Service Unavailable\nServer is down")
+                    self.display_error("Service Unavailable:\nServer is down")
                 case 504:
-                    print("Gateway Timeout\nNo response from the server")
+                    self.display_error("Gateway Timeout:\nNo response from the server")
                 case _:
-                    print(f"HTTP error occurred\n{http_error}")
+                    self.display_error(f"HTTP error occurred:\n{http_error}")
         except requests.exceptions.ConnectionError:
-            print("Connection Error:\nCheck your internet connection")
+            self.display_error("Connection Error:\nCheck your internet connection")
         except requests.exceptions.Timeout:
-            print("Timeout Error:\nThe request took too long")
+            self.display_error("Timeout Error:\nThe request took too long")
         except requests.exceptions.TooManyRedirects:
-            print("Too many Redirects:\nCheck the URL")
+            self.display_error("Too many Redirects:\nCheck the URL")
         except requests.exceptions.RequestException as request_exception:
-            print(f"Request Error:\n{request_exception}")
+            self.display_error(f"Request Error:\n{request_exception}")
 
 
     def display_error(self, message):
-        pass
+        self.temperature_label.setStyleSheet("font-size: 30px;")
+        self.temperature_label.setText(message)
 
     def display_weather(self, data):
-        print(data)
+        temperature_k = data["main"]["temp"]
+        temperature_c = temperature_k - 273.15
+
+        weather_id = data["weather"][0]["id"]
+        weather_description = data["weather"][0]["description"]
+
+        self.temperature_label.setStyleSheet("font-size: 75px;")
+        self.temperature_label.setText(f"{temperature_c:.0f}°C")
+
+        self.description_label.setText(weather_description)
+        self.emoji_label.setText(self.get_weather_emoji(weather_id))
+
+    @staticmethod
+    def get_weather_emoji(weather_id):
+        match weather_id:
+            case _ if 200 <= weather_id <= 232:
+                return "⛈️"
+            case _ if 300 <= weather_id <= 321:
+                return "🌦️"
+            case _ if 500 <= weather_id <= 531:
+                return "🌧️"
+            case _ if 600 <= weather_id <= 622:
+                return "❄️"
+            case _ if 701 <= weather_id <= 741:
+                return "🌫️"
+            case 762:
+                return "🌋"
+            case 771:
+                return "💨"
+            case 781:
+                return "🌪️"
+            case 800:
+                return "☀️"
+            case _ if 801 <= weather_id <= 804:
+                return "☁️"
+            case _:
+                return ""
